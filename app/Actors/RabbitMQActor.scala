@@ -3,11 +3,15 @@ package Actors
 import Actors.RabbitMQActor.StatusMessage
 import akka.actor.{Actor, Props}
 import akka.actor.Actor.Receive
+import com.google.inject.Inject
 import com.rabbitmq.client.ConnectionFactory
+import play.Environment
+import play.api.Play
+
 import scala.collection.JavaConversions._
 
 
-class RabbitMQActor extends Actor{
+class RabbitMQActor @Inject() (env: Environment) extends Actor{
 
   private val QUEUE_NAME = "tweets"
   val factory = new ConnectionFactory()
