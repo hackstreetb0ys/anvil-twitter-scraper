@@ -11,7 +11,7 @@ class RabbitMQActor extends Actor{
 
   private val QUEUE_NAME = "tweets"
   val factory = new ConnectionFactory()
-  factory.setHost(play.Play.application.configuration.getString("rabbitmq.url"))
+  factory.setHost("rabbit")
   factory.setUsername("user")
   factory.setPassword("password")
   val connection = factory.newConnection()
