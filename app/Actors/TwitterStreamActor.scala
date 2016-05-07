@@ -3,7 +3,7 @@ package Actors
 import javax.inject.{Inject, Named}
 
 import Actors.RabbitMQActor.StatusMessage
-import Actors.TwitterStreamActor.{Clean, Connected, Follow, State, Unfollow}
+import Actors.TwitterStreamActor._
 import akka.actor.{Actor, ActorRef, Props}
 import com.google.inject.Singleton
 import twitter4j._
@@ -21,6 +21,7 @@ class  TwitterStreamActor @Inject() (@Named("mq-actor") mqActor: ActorRef) exten
   val twitterStream = new TwitterStreamFactory(config).getInstance
   twitterStream.addListener(listener)
   var tags: Set[String]  = Set()
+  var campaigns: Map[ Set[String], String] = Map()
 
 
   override def receive = {
@@ -32,19 +33,11 @@ class  TwitterStreamActor @Inject() (@Named("mq-actor") mqActor: ActorRef) exten
     case Unfollow(oldtag) =>
       tags = tags - oldtag
       restartAPI()
+    case Campaign(name, follows) =>
+      campaigns = campaigns + (follows.tags -> name)
+      tags = tags ++ follows.tags
+      restartAPI()
   }
-
-//  private def startAPI() = {
-//    if (tags.nonEmpty){
-//      val listenerRef = listener
-//      twitterStream.addListener(listenerRef)
-//      val query = new FilterQuery()
-//      val tagArray: Array[String] = tags.toArray
-//      query.track(tagArray: _*)
-//      twitterStream.filter(query)
-//      println("connected")
-//    }
-//  }
 
   private def restartAPI() = {
     if (tags.nonEmpty){
@@ -58,18 +51,13 @@ class  TwitterStreamActor @Inject() (@Named("mq-actor") mqActor: ActorRef) exten
     }
   }
 
-//  override def preStart(): Unit = {
-//    tags = tags + "twitter"
-//    startAPI()
-//  }
-
   override def postStop(): Unit = {
     twitterStream.cleanUp()
     twitterStream.shutdown()
   }
 
   def listener = new StatusListener() {
-    def onStatus(status: Status) { println(s"got tweet ${status.getText}"); mqActor ! StatusMessage(status.getText)}
+    def onStatus(status: Status) { println(s"got tweet ${status.getText}"); mqActor ! StatusMessage(status.getText, campaigns)}
     def onDeletionNotice(statusDeletionNotice: StatusDeletionNotice) {}
     def onTrackLimitationNotice(numberOfLimitedStatuses: Int) {}
     def onException(ex: Exception) { ex.printStackTrace }
@@ -89,4 +77,5 @@ object TwitterStreamActor {
   //messages
   case class Follow(tags: Set[String])
   case class Unfollow(tag: String)
+  case class Campaign(name: String, follows: Follow)
 }

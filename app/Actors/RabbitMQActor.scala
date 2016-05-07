@@ -1,21 +1,21 @@
 package Actors
 
 import Actors.RabbitMQActor.StatusMessage
+import Actors.TwitterStreamActor.Campaign
 import akka.actor.{Actor, Props}
-import akka.actor.Actor.Receive
 import com.google.inject.Inject
 import com.rabbitmq.client.ConnectionFactory
 import play.Environment
-import play.api.Play
+import play.api.libs.json.{JsArray, JsObject, JsString, Json}
 
-import scala.collection.JavaConversions._
+import scala.util.parsing.json.JSONObject
 
 
 class RabbitMQActor @Inject() (env: Environment) extends Actor{
 
   private val QUEUE_NAME = "tweets"
   val factory = new ConnectionFactory()
-  factory.setHost("rabbit")
+  factory.setHost("192.168.99.100")
   factory.setUsername("user")
   factory.setPassword("password")
   val connection = factory.newConnection()
@@ -23,11 +23,32 @@ class RabbitMQActor @Inject() (env: Environment) extends Actor{
   val args =  new java.util.HashMap[String, Object]()
 
   args.put("x-max-queue-length", new Integer(10000))
-  channel.queueDeclare(QUEUE_NAME, false, false, false, args)
+  channel.queueDeclare("tweets", false, false, false, args)
+  channel.queueDeclare("campaigns", false, false, false, args)
 
   override def receive: Receive = {
-    case StatusMessage(msg) =>
-      channel.basicPublish("", QUEUE_NAME, null, msg.getBytes())
+    case StatusMessage(msg, campaigns) =>
+      campaigns.keys.foreach({tags =>
+        var matchedTags = List[String]()
+        tags.foreach({tag =>
+          if (msg.toLowerCase().contains(tag.toLowerCase)) {
+            matchedTags = tag :: matchedTags
+            val tweetQueueMessage = JsObject(Seq(
+              "id" -> JsString(tag),
+              "tweet" -> JsString(msg)
+            ))
+            channel.basicPublish("", "tweets", null, tweetQueueMessage.toString().getBytes())
+          }
+          if (matchedTags.nonEmpty) {
+            val campaignQueueMessage = JsObject(Seq(
+              "campaign" -> JsString(campaigns(tags)),
+              "tags" -> JsArray(matchedTags.map(JsString(_))),
+              "message" -> JsString(msg)
+            ))
+            channel.basicPublish("", "campaigns", null, campaignQueueMessage.toString().getBytes())
+          }
+        })
+      })
   }
 
   override def postStop() = {
@@ -38,5 +59,5 @@ class RabbitMQActor @Inject() (env: Environment) extends Actor{
 
 object RabbitMQActor{
   val props = Props[RabbitMQActor]
-  case class StatusMessage(message: String)
+  case class StatusMessage(message: String, campaigns: Map[Set[String], String])
 }
