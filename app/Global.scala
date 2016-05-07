@@ -12,5 +12,5 @@ trait GlobalTrait {}
 
 @Singleton
 class Global @Inject()(@Named("twitter-stream") twitter: ActorRef) extends GlobalTrait{
-  val start = twitter ! Follow(Set("sjhdgfjsdgf"))
+  val start = twitter ! Follow(Set("apple"))
 }
