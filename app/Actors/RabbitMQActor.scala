@@ -38,15 +38,15 @@ class RabbitMQActor @Inject() (env: Environment) extends Actor{
             ))
             channel.basicPublish("", "tweets", null, tweetQueueMessage.toString().getBytes())
           }
-          if (matchedTags.nonEmpty) {
-            val campaignQueueMessage = JsObject(Seq(
-              "campaign" -> JsString(campaigns(tags)),
-              "tags" -> JsArray(matchedTags.map(JsString(_))),
-              "message" -> JsString(msg)
-            ))
-            channel.basicPublish("", "campaigns", null, campaignQueueMessage.toString().getBytes())
-          }
         })
+        if (matchedTags.nonEmpty) {
+          val campaignQueueMessage = JsObject(Seq(
+            "campaign" -> JsString(campaigns(tags)),
+            "tags" -> JsArray(matchedTags.map(JsString(_))),
+            "message" -> JsString(msg)
+          ))
+          channel.basicPublish("", "campaigns", null, campaignQueueMessage.toString().getBytes())
+        }
       })
   }
 
