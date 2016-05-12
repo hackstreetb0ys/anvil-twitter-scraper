@@ -14,7 +14,7 @@ import scala.util.parsing.json.JSONObject
 class RabbitMQActor @Inject() (env: Environment) extends Actor{
 
   val factory = new ConnectionFactory()
-  factory.setHost("rabbit")
+  factory.setHost("192.168.99.100")
   factory.setUsername("user")
   factory.setPassword("password")
   val connection = factory.newConnection()

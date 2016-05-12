@@ -6,17 +6,19 @@ import Actors.RabbitMQActor.StatusMessage
 import Actors.TwitterStreamActor._
 import akka.actor.{Actor, ActorRef, Props}
 import com.google.inject.Singleton
+import com.typesafe.config.ConfigFactory
 import twitter4j._
 
 import collection.JavaConverters._
 
 @Singleton
 class  TwitterStreamActor @Inject() (@Named("mq-actor") mqActor: ActorRef) extends Actor {
+  val conf = ConfigFactory.load()
   val config = new twitter4j.conf.ConfigurationBuilder()
-    .setOAuthConsumerKey("DV4xYaeuEvCiwveS1dk8Ezaga")
-    .setOAuthConsumerSecret("7F7ZARaJnydZiRvWcDg0Vlnzr3alpgmLk7txQaWQiCRdpglbfp")
-    .setOAuthAccessToken("542708952-bvMyuUYBi50FovsbalJP2cpA7qLT2ZpETBFnXvDi")
-    .setOAuthAccessTokenSecret("3JyDVvrz1jkomIUYvRRWFbhboYG54rRgeCBUFsVVI9qKg")
+    .setOAuthConsumerKey(conf.getString("twitter.consumer.key"))
+    .setOAuthConsumerSecret(conf.getString("twitter.consumer.secret"))
+    .setOAuthAccessToken(conf.getString("twitter.access.key"))
+    .setOAuthAccessTokenSecret(conf.getString("twitter.access.secret"))
     .build
   val twitterStream = new TwitterStreamFactory(config).getInstance
   twitterStream.addListener(listener)
