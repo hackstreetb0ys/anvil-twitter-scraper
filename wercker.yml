@@ -19,7 +19,7 @@ build:
 
 deploy:
     box: ragnarula/jdk:8u73-b02_0.1
-    hub:
+    steps:
     - script:
         name: Copy app in
         code: cp -R $WERCKER_ROOT/app /app
